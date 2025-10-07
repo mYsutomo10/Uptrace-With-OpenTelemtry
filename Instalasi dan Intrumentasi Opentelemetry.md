@@ -147,3 +147,13 @@ service:
 
   extensions: [health_check, pprof, zpages]
 ```
+## 4. Jalankan OpenTelemetry Collector
+```
+sudo docker run -d \
+  --name otel-collector-uptrace \
+  --network host \
+  --privileged \
+  -v "$(pwd)/config.yaml":/etc/otelcol-contrib/config.yaml \
+  -v /:/host:ro \
+  otel/opentelemetry-collector-contrib:0.113.0
+```
