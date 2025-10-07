@@ -132,7 +132,7 @@ sudo docker run -d \
   -v /:/host:ro \
   otel/opentelemetry-collector-contrib:0.113.0
 ```
-## 5. Buat Aplikasi Untuk Demo
+## 5. Buat Script Untuk Demo
 ```
 import time
 import requests
