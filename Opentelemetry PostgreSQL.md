@@ -169,20 +169,20 @@ from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from opentelemetry import trace
 from psycopg2 import OperationalError
 
-# Dapatkan Tracer global
+# Tracer global
 tracer = trace.get_tracer("app.pagila")
 
 def configure_telemetry():
     """Mengkonfigurasi OpenTelemetry dan Instrumentation."""
     print("Mengkonfigurasi OpenTelemetry...")
 
-    # 1. Konfigurasi OpenTelemetry dengan Uptrace DSN dari variabel lingkungan
+    # Konfigurasi OpenTelemetry
     uptrace.configure_opentelemetry(
         service_name="postgresql-yoga",
         service_version="1.0.0",
     )
 
-    # 2. Instrumentasi Psycopg2
+    # Instrumentasi Psycopg2
     Psycopg2Instrumentor().instrument(
         capture_parameters=True
     )
@@ -194,7 +194,7 @@ def run_db_operations():
     DB_HOST_REAL = "localhost"
     DB_HOST_FAIL = "nonexistent-host"
 
-    # Tentukan apakah koneksi akan berhasil (50% kemungkinan gagal)
+    # Simulasi Koneksi
     is_success = random.random() < 0.5
 
     DB_CONFIG = {
@@ -204,7 +204,7 @@ def run_db_operations():
         "host": DB_HOST_FAIL if not is_success else DB_HOST_REAL
     }
 
-    # Menentukan nama Span utama berdasarkan hasil yang diharapkan
+    # Nama span
     job_name = "pagila-job-success" if is_success else "pagila-job-fail"
 
     with tracer.start_as_current_span(job_name) as main_span:
@@ -219,13 +219,11 @@ def run_db_operations():
 
             main_span.set_attribute("app.connection.status", "successful")
 
-            # Kueri Cepat (Akan dicatat sebagai span 'SELECT')
-            print("Menjalankan kueri cepat...")
+            # Query
             cur.execute("SELECT first_name, last_name FROM actor LIMIT 10")
             print(f"Hasil cepat: {len(cur.fetchall())} baris.")
 
-            # Kueri Lambat (Real Slow Query)
-						print("Menjalankan slow query...")
+            # Slow Query
 						start_time = time.time()
 
 						cur.execute("""
@@ -266,7 +264,7 @@ def run_db_operations():
 def main():
     configure_telemetry()
 
-    # Lakukan loop setiap 5 detik
+    # Loop setiap 5 detik
     DELAY_SECONDS = 5
     print(f"\nMemulai loop. Akan menjalankan operasi DB setiap {DELAY_SECONDS} detik.")
 
@@ -276,11 +274,9 @@ def main():
             time.sleep(DELAY_SECONDS)
 
     except KeyboardInterrupt:
-        # Menangani penghentian skrip oleh pengguna
         print("\n\nLoop dihentikan oleh pengguna.")
 
     finally:
-        # Pastikan traces terkirim sebelum keluar
         print("Mengirim traces dan mematikan OpenTelemetry...")
         uptrace.shutdown()
         print("Program Selesai.")
