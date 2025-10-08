@@ -149,10 +149,8 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 # Konfigurasi Endpoint Collector
-# Aplikasi akan mengirim ke Collector di host (localhost) pada port 4317 (gRPC).
 OTLP_ENDPOINT = "http://localhost:4317"
 
-# Menambahkan atribut service.name dan environment ke semua telemetri
 resource = Resource.create({
     "service.name": "uptrace-demo-yoga",
     "seervice.version": "1.0.0"
@@ -161,19 +159,19 @@ resource = Resource.create({
 def setup_tracing():
     """Menginisialisasi OpenTelemetry Tracer Provider dan Exporter."""
 
-    # 1. Inisialisasi Tracer Provider
+    # Inisialisasi Tracer Provider
     provider = TracerProvider(resource=resource)
 
-    # 2. Konfigurasi OTLP Exporter (mengirim span ke Collector)
+    # Konfigurasi OTLP Exporter
     otlp_exporter = OTLPSpanExporter(endpoint=OTLP_ENDPOINT, insecure=True)
 
-    # 3. Tambahkan Batch Span Processor
+    # Batch Span Processor
     provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
-    # 4. Tetapkan Tracer Provider sebagai global
+    # Tracer Provider global
     trace.set_tracer_provider(provider)
 
-    # 5. Instrumentasi Pustaka 'requests'
+    # Instrumentasi requests
     RequestsInstrumentor().instrument()
     print("Tracing setup complete.")
 
@@ -201,7 +199,7 @@ def setup_metrics():
         metric_readers=[reader]
     )
 
-    # 4. Tetapkan Meter Provider sebagai global
+    # Meter Provider global
     metrics.set_meter_provider(provider)
     print("Metrics setup complete.")
 
@@ -211,14 +209,12 @@ def make_external_request():
     """Melakukan permintaan eksternal."""
     status = 0
     try:
-        # Panggilan requests ini secara otomatis di-trace
         response = requests.get("https://www.google.com", timeout=5)
         status = response.status_code
         print(f"[Trace] Google request: success ({status})")
     except requests.exceptions.RequestException as e:
         status = 500
         print(f"[Trace] Google request: FAILED ({e})")
-        # Merekam event/error di trace saat ini
         trace.get_current_span().set_attribute("error", True)
 
     # Update metrik counter
@@ -270,7 +266,7 @@ if __name__ == "__main__":
             print(f"\nAn unexpected error occurred: {e}")
             time.sleep(10)
 
-    # Tunggu beberapa saat agar data BatchSpanProcessor dan MetricReader selesai mengirim data
+    # Waktu tunggu untuk BatchSpanProcessor dan MetricReader selesai mengirim data
     time.sleep(5)
     print("Application closed. Data flush complete.")
 ```
