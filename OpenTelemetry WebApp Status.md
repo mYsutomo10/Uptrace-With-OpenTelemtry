@@ -226,12 +226,12 @@ tracer_provider.add_span_processor(span_processor)
 tracer = trace.get_tracer(__name__)
 
 def check_health():
-    """Check internal health via localhost"""
-    with tracer.start_as_current_span("internal.health.check") as span:
+    """Check internal health via Nginx"""
+    with tracer.start_as_current_span("health.check") as span:
         try:
             response = requests.get("http://127.0.0.1:5000/health", timeout=5)
 
-            span.set_attribute("http.status_code", response.status_code)
+            span.set_attribute("status_code", response.status_code)
             span.set_attribute("health.status", "ok" if response.status_code == 200 else "down")
             span.set_attribute("check.type", "internal")
 
@@ -244,10 +244,10 @@ def check_health():
             return False
 
 if __name__ == "__main__":
-    print("Starting internal health checker...")
+    print("Starting health checker...")
     while True:
         check_health()
-        time.sleep(10)
+        time.sleep(30)
 ```
 ### 6.3 HTTP Checker
 ```
@@ -279,18 +279,16 @@ tracer_provider.add_span_processor(span_processor)
 tracer = trace.get_tracer(__name__)
 
 def check_http():
-    """Check HTTP via Nginx (external simulation)"""
-    with tracer.start_as_current_span("external.http.check") as span:
+    with tracer.start_as_current_span("http.check") as span:
         try:
-            response = requests.get("http://healthcheck.local/health", timeout=5)
+            response = requests.get("http://webyoga.ina/", timeout=5)
 
             span.set_attribute("http.status_code", response.status_code)
-            span.set_attribute("http.url", "http://healthcheck.local/health")
-            span.set_attribute("health.status", "up" if response.status_code == 200 else "down")
+            span.set_attribute("http.url", "http://webyoga.ina/")
+            span.set_attribute("web.status", "online" if response.status_code == 200 else "offline")
             span.set_attribute("check.type", "external")
             span.set_attribute("response.size", len(response.content))
 
-            # Try to parse JSON, fallback to text
             try:
                 data = response.json()
                 print(f"[External] Status: {response.status_code} - {data}")
@@ -299,22 +297,22 @@ def check_http():
 
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            span.set_attribute("health.status", "down")
+            span.set_attribute("web.status", "offline")
             span.set_attribute("error", str(e))
             span.set_attribute("error.type", type(e).__name__)
             print(f"[External] Error: {e}")
             return False
         except Exception as e:
-            span.set_attribute("health.status", "down")
+            span.set_attribute("web.status", "offline")
             span.set_attribute("error", str(e))
             print(f"[External] Unexpected error: {e}")
             return False
 
 if __name__ == "__main__":
-    print("Starting external HTTP checker...")
+    print("Starting HTTP checker...")
     while True:
         check_http()
-        time.sleep(30)  # Check every 30 seconds
+        time.sleep(30)
 ```
 ## 7. Jalankan Komponen
 ```
